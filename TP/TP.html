@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bar Chart - PIB des États-Unis</title>
+    <!-- Chargement de Tailwind CSS pour un style moderne et responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chargement de D3.js pour la visualisation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        /* Configuration de la police globale */
+        :root {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Styles personnalisés pour le graphique */
+        #chart-container {
+            background-color: #f7f7f7;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .bar {
+            fill: #4F46E5; /* Indigo */
+            transition: fill 0.2s;
+        }
+        .bar:hover {
+            fill: #F59E0B; /* Amber pour le survol */
+        }
+        .tick line {
+            stroke: #d1d5db; /* Lignes de grille légères */
+        }
+        .tick text {
+            font-size: 10px;
+        }
+        #tooltip {
+            position: absolute;
+            background-color: #1F2937; /* Gris foncé */
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            pointer-events: none; /* Ne pas interférer avec la souris */
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            z-index: 10;
+        }
+        /* Rendre le SVG responsive dans son conteneur */
+        .svg-container {
+            display: inline-block;
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            vertical-align: top;
+            overflow: hidden;
+        }
+        .svg-content-responsive {
+            display: inline-block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div id="chart-container" class="w-full max-w-5xl rounded-lg p-6 md:p-10">
+        <!-- Titre du graphique (User Story #1) -->
+        <h1 id="title" class="text-3xl md:text-4xl font-extrabold text-center text-gray-800 mb-6">
+            Produit Intérieur Brut des États-Unis (1947 - 2015)
+        </h1>
+        
+        <!-- Conteneur pour le SVG D3 -->
+        <div class="svg-container">
+            <!-- Le SVG sera injecté ici par le JavaScript -->
+        </div>
+    </div>
+
+    <!-- Tooltip (User Story #12 & #13) -->
+    <div id="tooltip" style="opacity: 0;"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const DATA_URL = 'https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json';
+
+            // 1. Définition des dimensions et marges
+            const margin = { top: 30, right: 30, bottom: 60, left: 80 };
+            const fullWidth = 900;
+            const fullHeight = 500;
+            const width = fullWidth - margin.left - margin.right;
+            const height = fullHeight - margin.top - margin.bottom;
+
+            // Sélectionner le conteneur et créer le SVG
+            const svgContainer = d3.select(".svg-container");
+            
+            const svg = svgContainer.append("svg")
+                .attr("viewBox", `0 0 ${fullWidth} ${fullHeight}`)
+                .attr("preserveAspectRatio", "xMidYMid meet")
+                .classed("svg-content-responsive", true)
+                .append("g")
+                .attr("transform", `translate(${margin.left}, ${margin.top})`);
+            
+            // 2. Fonction pour formater les valeurs en USD
+            const formatGDP = (d) => `$${d3.format(",.1f")(d)} Billions`;
+            
+            // 3. Fonction de gestion des erreurs pour les appels API
+            const handleErrors = (response) => {
+                if (!response.ok) {
+                    throw Error(response.statusText);
+                }
+                return response;
+            }
+
+            // 4. Chargement des données
+            fetch(DATA_URL)
+                .then(handleErrors)
+                .then(response => response.json())
+                .then(data => {
+                    const gdpData = data.data.map(item => ({
+                        date: new Date(item[0]),
+                        gdp: item[1]
+                    }));
+
+                    // 5. Création des Échelles
+                    const maxDate = d3.max(gdpData, d => d.date);
+                    const minDate = d3.min(gdpData, d => d.date);
+                    const maxGDP = d3.max(gdpData, d => d.gdp);
+
+                    // Échelle X (Time)
+                    const xScale = d3.scaleTime()
+                        .domain([minDate, maxDate])
+                        .range([0, width]);
+
+                    // Échelle Y (Linear)
+                    const yScale = d3.scaleLinear()
+                        .domain([0, maxGDP])
+                        // Note : La plage est inversée car l'origine (0,0) est en haut
+                        .range([height, 0]); 
+
+                    // 6. Création des Axes (User Story #2, #3, #4)
+                    
+                    // Axe X
+                    const xAxis = d3.axisBottom(xScale);
+                    svg.append("g")
+                        .attr("id", "x-axis")
+                        .attr("transform", `translate(0, ${height})`)
+                        .call(xAxis)
+                        .attr("class", "text-gray-600");
+
+                    // Axe Y
+                    const yAxis = d3.axisLeft(yScale);
+                    svg.append("g")
+                        .attr("id", "y-axis")
+                        .call(yAxis)
+                        .attr("class", "text-gray-600");
+
+                    // Étiquette de l'axe Y
+                    svg.append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 0 - margin.left + 5)
+                        .attr("x", 0 - (height / 2))
+                        .attr("dy", "1em")
+                        .style("text-anchor", "middle")
+                        .attr("class", "text-sm text-gray-700 font-semibold")
+                        .text("PIB (en milliards de dollars US)");
+
+                    // Largeur de chaque barre pour remplir l'espace
+                    const barWidth = width / gdpData.length;
+
+                    // 7. Création des Barres (User Story #5, #6, #7, #8, #9, #10, #11)
+                    svg.selectAll(".bar")
+                        .data(gdpData)
+                        .enter()
+                        .append("rect")
+                        .attr("class", "bar")
+                        .attr("x", d => xScale(d.date))
+                        .attr("y", d => yScale(d.gdp)) // Position Y du haut de la barre
+                        .attr("width", barWidth)
+                        .attr("height", d => height - yScale(d.gdp)) // Hauteur de la barre
+                        .attr("data-date", d => d3.timeFormat("%Y-%m-%d")(d.date)) // Format requis pour les tests
+                        .attr("data-gdp", d => d.gdp)
+                        .attr("tabindex", 0) // Pour l'accessibilité
+
+                        // 8. Gestion des événements de la souris (Tooltip)
+                        .on("mouseover", (event, d) => {
+                            const tooltip = d3.select("#tooltip");
+                            
+                            // Formattage de la date en Trimestre/Année
+                            const year = d.date.getFullYear();
+                            const quarter = Math.floor(d.date.getMonth() / 3) + 1;
+                            const quarterDate = `${year} T${quarter}`;
+
+                            tooltip.transition()
+                                .duration(150)
+                                .style("opacity", 0.95);
+
+                            tooltip.html(`
+                                <span class="font-bold">${quarterDate}</span><br>
+                                ${formatGDP(d.gdp)}
+                            `)
+                            .attr("data-date", d3.timeFormat("%Y-%m-%d")(d.date)) // User Story #13
+
+                            // Positionnement du Tooltip
+                            const xPosition = event.pageX + 10;
+                            const yPosition = event.pageY - 40;
+
+                            tooltip.style("left", `${xPosition}px`)
+                                .style("top", `${yPosition}px`);
+                        })
+                        .on("mouseout", () => {
+                            d3.select("#tooltip").transition()
+                                .duration(300)
+                                .style("opacity", 0);
+                        });
+
+                })
+                .catch(error => {
+                    console.error("Erreur lors du chargement des données:", error);
+                    d3.select("#chart-container").append("p").attr("class", "text-red-500 text-center mt-4").text(`Erreur de chargement: ${error.message}`);
+                });
+        });
+    </script>
+</body>
+</html>
+
