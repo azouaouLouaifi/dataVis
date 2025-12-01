@@ -7,20 +7,20 @@ Visualisation interactive du Produit Intérieur Brut (PIB) trimestriel des État
 
 ---
 
-## 📌 Aperçu
+##  Aperçu
 
 - **Fichier principal**: `TP/TP.html`
 - **Source des données**: https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json
 - **But**: afficher un graphique à barres réactif montrant le PIB par trimestre, avec tooltip et métadonnées pour tests/accessibilité.
 
-## 🛠 Technologies
+## Technologies
 
 - **HTML5**
 - **Tailwind CSS** (CDN) — styles responsives
 - **JavaScript (ES6+)**
 - **D3.js v7** — échelles, axes, et rendu SVG
 
-## 🚀 Exécution (local)
+##  Exécution (local)
 
 ### Option A — Ouvrir directement
 
@@ -53,18 +53,18 @@ http://localhost:8000/TP.html
 - Survolez une barre pour afficher le tooltip qui montre le trimestre et la valeur du PIB.
 - Les barres contiennent les attributs `data-date` (format `YYYY-MM-DD`) et `data-gdp`, utiles pour tests automatisés.
 
-## ✅ Points d'implémentation clés
+##  Points d'implémentation clés
 
 - `#title` — titre H1
 - `#x-axis` & `#y-axis` — axes générés par D3
 - `.bar` — barres SVG avec `data-date` & `data-gdp`
 - `#tooltip` — info-bulle affichée au survol
 
-## 📂 Données
+##  Données
 
 Le JSON public renvoie un tableau de paires `[date, valeur]`. Le script convertit `date` en `Date` JS et `valeur` en nombre.
 
-## ♿ Accessibilité & Tests
+##  Accessibilité & Tests
 
 - Les barres ont `tabindex="0"` pour navigation clavier.
 - Les attributs `data-date` permettent d'écrire des tests unitaires/automatisés (format attendu: `YYYY-MM-DD`).
