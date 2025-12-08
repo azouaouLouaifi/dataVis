@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TP3 - DataViz France</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <h1>Carte de l'évolution des déchets (DEEE)</h1>
+
+    <div id="slider-container">
+        <input id="slider" type="range" value="0" min="0" max="6" step="1" />
+        <br/>
+        <span>Année : <span id="day">2009</span></span>
+    </div>
+
+    <div id="map-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
